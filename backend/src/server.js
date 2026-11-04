@@ -4,6 +4,10 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const documentRoutes = require("./routes/documentRoutes");
+const auditRoutes = require("./routes/auditRoutes");
+const permissionRoutes =require("./routes/permissionRoutes");
+
+
 const connectDB = require("./config/db");
 
 dotenv.config();
@@ -17,6 +21,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/audit", auditRoutes);
+app.use("/api/permissions",permissionRoutes);
 
 app.get("/", (req, res) => {
   res.send("TrustVault API Running");
