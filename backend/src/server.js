@@ -6,7 +6,8 @@ const userRoutes = require("./routes/userRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const auditRoutes = require("./routes/auditRoutes");
 const permissionRoutes =require("./routes/permissionRoutes");
-
+const adminRoutes =
+require("./routes/adminRoutes");
 
 const connectDB = require("./config/db");
 
@@ -23,6 +24,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/permissions",permissionRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.send("TrustVault API Running");
