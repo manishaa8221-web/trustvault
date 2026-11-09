@@ -6,7 +6,8 @@ import API_BASE_URL from "../api";
 export default function Register() {
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,18 +18,17 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: username.trim(),
-            password,
-            role: "OWNER",
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
 
       const data = await response.json();
 
@@ -61,16 +61,27 @@ export default function Register() {
         </p>
 
         <form onSubmit={handleRegister}>
-          <label style={s.label}>Username</label>
+          <label style={s.label}>Full Name</label>
 
           <input
             style={s.input}
             type="text"
-            placeholder="Enter your username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            minLength={3}
-            autoComplete="username"
+            placeholder="Enter your full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            required
+          />
+
+          <label style={s.label}>Email Address</label>
+
+          <input
+            style={s.input}
+            type="email"
+            placeholder="Enter your email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             required
           />
 
@@ -82,7 +93,7 @@ export default function Register() {
             placeholder="Create a password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
             required
           />
