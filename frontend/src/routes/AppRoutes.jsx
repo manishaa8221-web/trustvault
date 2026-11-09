@@ -2,7 +2,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "../pages/Login";
-import Register from "../pages/Register";
 import AdminLogin from "../pages/AdminLogin";
 
 import Dashboard from "../pages/Dashboard";
@@ -15,17 +14,20 @@ function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Open User Login directly */}
-        <Route path="/" element={<Navigate to="/user-login" replace />} />
-
-        {/* User pages */}
+        {/* Combined User Login and Registration */}
+        <Route path="/" element={<Login />} />
         <Route path="/user-login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
 
-        {/* Separate Admin login */}
+        {/* Redirect old registration links to combined page */}
+        <Route
+          path="/register"
+          element={<Navigate to="/user-login" replace />}
+        />
+
+        {/* Separate Admin Login */}
         <Route path="/admin-login" element={<AdminLogin />} />
 
-        {/* User dashboard */}
+        {/* User Dashboard */}
         <Route
           path="/dashboard"
           element={
@@ -35,7 +37,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Documents page */}
+        {/* Documents */}
         <Route
           path="/documents"
           element={
@@ -45,7 +47,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Admin dashboard */}
+        {/* Admin Dashboard */}
         <Route
           path="/admin"
           element={
@@ -55,7 +57,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Invalid URLs go to User Login */}
+        {/* Invalid URLs */}
         <Route path="*" element={<Navigate to="/user-login" replace />} />
       </Routes>
     </BrowserRouter>

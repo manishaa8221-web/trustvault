@@ -6,8 +6,12 @@ import API_BASE_URL from "../api";
 export default function Login() {
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState("login");
+
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,19 +21,16 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email.trim(),
-            password,
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
 
       const data = await response.json();
 
@@ -65,14 +66,55 @@ export default function Login() {
     }
   };
 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      alert("Account created successfully! Please log in.");
+
+      setName("");
+      setPassword("");
+      setActiveTab("login");
+      setError("");
+    } catch (err) {
+      setError(err.message || "Unable to connect to server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setError("");
+    setPassword("");
+  };
+
   return (
     <div style={s.page}>
       <div style={s.container}>
         <div style={s.welcome}>
           <div style={s.brandIcon}>🔐</div>
-
           <h1>Welcome to TrustVault</h1>
-
           <p>
             Your secure space to upload, manage and
             share important documents.
@@ -82,13 +124,59 @@ export default function Login() {
         <div style={s.card}>
           <div style={s.icon}>👤</div>
 
-          <h2 style={s.heading}>User Login</h2>
+          <h2 style={s.heading}>User Account</h2>
 
           <p style={s.subtitle}>
-            Sign in to access your documents securely.
+            Securely manage your documents.
           </p>
 
-          <form onSubmit={handleLogin}>
+          <div style={s.tabs}>
+            <button
+              type="button"
+              onClick={() => switchTab("login")}
+              style={{
+                ...s.tab,
+                ...(activeTab === "login" ? s.activeTab : {}),
+              }}
+            >
+              Login
+            </button>
+
+            <button
+              type="button"
+              onClick={() => switchTab("register")}
+              style={{
+                ...s.tab,
+                ...(activeTab === "register" ? s.activeTab : {}),
+              }}
+            >
+              Create Account
+            </button>
+          </div>
+
+          <form
+            onSubmit={
+              activeTab === "login"
+                ? handleLogin
+                : handleRegister
+            }
+          >
+            {activeTab === "register" && (
+              <>
+                <label style={s.label}>Full Name</label>
+
+                <input
+                  style={s.input}
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                  required
+                />
+              </>
+            )}
+
             <label style={s.label}>Email Address</label>
 
             <input
@@ -106,10 +194,19 @@ export default function Login() {
             <input
               style={s.input}
               type="password"
-              placeholder="Enter your password"
+              placeholder={
+                activeTab === "login"
+                  ? "Enter your password"
+                  : "Create a password"
+              }
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
+              minLength={activeTab === "register" ? 6 : undefined}
+              autoComplete={
+                activeTab === "login"
+                  ? "current-password"
+                  : "new-password"
+              }
               required
             />
 
@@ -117,19 +214,53 @@ export default function Login() {
 
             <button
               type="submit"
-              style={s.button}
+              style={{
+                ...s.button,
+                opacity: loading ? 0.7 : 1,
+              }}
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading
+                ? activeTab === "login"
+                  ? "Signing in..."
+                  : "Creating account..."
+                : activeTab === "login"
+                  ? "Sign In"
+                  : "Create Account"}
             </button>
           </form>
 
           <p style={s.bottom}>
-            New to TrustVault?{" "}
-            <Link to="/register" style={s.registerLink}>
-              Create a User Account
-            </Link>
+            {activeTab === "login" ? (
+              <>
+                New to TrustVault?{" "}
+                <button
+                  type="button"
+                  style={s.textButton}
+                  onClick={() => switchTab("register")}
+                >
+                  Create an Account
+                </button>
+              </>
+            ) : (
+              <>
+                Already registered?{" "}
+                <button
+                  type="button"
+                  style={s.textButton}
+                  onClick={() => switchTab("login")}
+                >
+                  Login
+                </button>
+              </>
+            )}
           </p>
+        </div>
+
+        <div style={s.adminLink}>
+          <Link to="/admin-login" style={s.adminLinkText}>
+            Admin Login
+          </Link>
         </div>
       </div>
 
@@ -156,15 +287,11 @@ const s = {
     alignItems: "center",
     padding: 20,
     fontFamily: "Arial, sans-serif",
-    position: "relative",
-    overflow: "hidden",
   },
 
   container: {
     width: "100%",
     maxWidth: 650,
-    position: "relative",
-    zIndex: 1,
   },
 
   welcome: {
@@ -211,7 +338,34 @@ const s = {
     textAlign: "center",
     color: "#718096",
     fontSize: 14,
-    marginBottom: 28,
+    marginBottom: 25,
+  },
+
+  tabs: {
+    display: "flex",
+    gap: 8,
+    padding: 5,
+    background: "#edf3f4",
+    borderRadius: 9,
+    marginBottom: 22,
+  },
+
+  tab: {
+    flex: 1,
+    padding: 12,
+    border: 0,
+    borderRadius: 7,
+    background: "transparent",
+    color: "#526575",
+    fontSize: 14,
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+
+  activeTab: {
+    background: "#126b70",
+    color: "#ffffff",
+    boxShadow: "0 2px 7px #126b7030",
   },
 
   label: {
@@ -260,15 +414,29 @@ const s = {
     color: "#718096",
   },
 
-  registerLink: {
+  textButton: {
+    border: 0,
+    padding: 0,
+    background: "transparent",
     color: "#126b70",
     fontWeight: "bold",
+    cursor: "pointer",
+    fontSize: 14,
+  },
+
+  adminLink: {
+    textAlign: "center",
+    marginTop: 20,
+  },
+
+  adminLinkText: {
+    color: "#d4eeee",
+    fontSize: 14,
     textDecoration: "none",
+    fontWeight: "bold",
   },
 
   footer: {
-    position: "relative",
-    zIndex: 1,
     textAlign: "center",
     padding: 20,
     color: "#c5d9df",
