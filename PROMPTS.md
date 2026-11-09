@@ -1,4 +1,3 @@
-
 # TrustVault - AI Usage and Prompt Log
 
 ## Project Overview
@@ -98,12 +97,5 @@ I reviewed the suggested code, made corrections, ran the application and verifie
 
 I learned about JWT authentication, MongoDB models, document permissions, audit logging and automated security testing.
 
-## Commit Links
+## 
 
-Add actual Git commit links here after pushing the corresponding work to GitHub.
-
-- Project setup: [Add commit link]
-- Authentication: [Add commit link]
-- Document permissions: [Add commit link]
-- Audit logging: [Add commit link]
-- Security testing: [Add commit link]
