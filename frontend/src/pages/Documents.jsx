@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../api";
+import "./DocumentsResponsive.css";
 
 function Documents() {
   const navigate = useNavigate();
@@ -326,7 +327,6 @@ function Documents() {
     return parsedDate.toLocaleDateString();
   };
 
-  // Search and category filtering
   const filteredDocuments = documents.filter((doc) => {
     const search = searchTerm.trim().toLowerCase();
 
@@ -351,7 +351,11 @@ function Documents() {
   };
 
   const renderDocumentCard = (doc) => (
-    <article key={doc._id} style={styles.documentCard}>
+    <article
+      key={doc._id}
+      className="documents-card"
+      style={styles.documentCard}
+    >
       {editingId === doc._id ? (
         <div style={styles.editPanel}>
           <h3 style={styles.cardHeading}>Edit document</h3>
@@ -385,7 +389,7 @@ function Documents() {
             <option value="Important">Important</option>
           </select>
 
-          <div style={styles.actionRow}>
+          <div className="documents-action-row" style={styles.actionRow}>
             <button
               type="button"
               style={styles.primaryButton}
@@ -405,7 +409,7 @@ function Documents() {
         </div>
       ) : (
         <>
-          <div style={styles.cardTop}>
+          <div className="documents-card-top" style={styles.cardTop}>
             <div style={styles.fileIcon}>{getFileIcon(doc)}</div>
 
             <div style={styles.fileInfo}>
@@ -423,14 +427,14 @@ function Documents() {
             </span>
           </div>
 
-          <div style={styles.cardMeta}>
+          <div className="documents-card-meta" style={styles.cardMeta}>
             <span>
               {isOwner(doc) ? "You own this document" : "Shared with you"}
             </span>
             <span>{formatDate(doc.createdAt)}</span>
           </div>
 
-          <div style={styles.actionRow}>
+          <div className="documents-action-row" style={styles.actionRow}>
             <button
               type="button"
               style={styles.primaryButton}
@@ -468,7 +472,7 @@ function Documents() {
             Manage sharing and permissions
           </summary>
 
-          <div style={styles.sharePanel}>
+          <div className="documents-share-panel" style={styles.sharePanel}>
             <label style={styles.label}>
               Recipient's registered user ID
             </label>
@@ -496,7 +500,7 @@ function Documents() {
               <option value="EDIT">EDIT - Can edit document details</option>
             </select>
 
-            <div style={styles.actionRow}>
+            <div className="documents-action-row" style={styles.actionRow}>
               <button
                 type="button"
                 style={styles.primaryButton}
@@ -526,7 +530,11 @@ function Documents() {
                       : sharedUser;
 
                   return (
-                    <div key={userId || index} style={styles.permissionRow}>
+                    <div
+                      key={userId || index}
+                      className="documents-permission-row"
+                      style={styles.permissionRow}
+                    >
                       <span>
                         {typeof sharedUser === "object"
                           ? sharedUser?.email || userId
@@ -554,9 +562,9 @@ function Documents() {
   );
 
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <header style={styles.header}>
+    <div className="documents-page" style={styles.page}>
+      <div className="documents-container" style={styles.container}>
+        <header className="documents-header" style={styles.header}>
           <div>
             <div style={styles.brand}>TRUSTVAULT</div>
             <h1 style={styles.pageTitle}>Documents</h1>
@@ -567,6 +575,7 @@ function Documents() {
 
           <button
             type="button"
+            className="documents-back-button"
             style={styles.backButton}
             onClick={() => navigate(isAdmin ? "/admin" : "/dashboard")}
           >
@@ -574,7 +583,10 @@ function Documents() {
           </button>
         </header>
 
-        <section style={styles.uploadCard}>
+        <section
+          className="documents-upload-card"
+          style={styles.uploadCard}
+        >
           <div style={styles.uploadHeading}>
             <div>
               <h2 style={styles.sectionTitle}>Upload a document</h2>
@@ -602,8 +614,14 @@ function Documents() {
               <span style={styles.filePickerHint}>PDF, DOCX or TXT</span>
             </label>
 
-            <div style={styles.uploadControls}>
-              <div style={styles.categoryField}>
+            <div
+              className="documents-upload-controls"
+              style={styles.uploadControls}
+            >
+              <div
+                className="documents-category-field"
+                style={styles.categoryField}
+              >
                 <label style={styles.label}>Category</label>
 
                 <select
@@ -620,6 +638,7 @@ function Documents() {
 
               <button
                 type="submit"
+                className="documents-upload-button"
                 style={{
                   ...styles.uploadButton,
                   opacity: loading ? 0.65 : 1,
@@ -659,9 +678,14 @@ function Documents() {
             </div>
           </div>
 
-          {/* Search and category filters */}
-          <div style={styles.filterPanel}>
-            <div style={styles.searchField}>
+          <div
+            className="documents-filter-panel"
+            style={styles.filterPanel}
+          >
+            <div
+              className="documents-search-field"
+              style={styles.searchField}
+            >
               <label style={styles.label}>Search documents</label>
               <div style={styles.searchWrapper}>
                 <span style={styles.searchIcon}>⌕</span>
@@ -675,7 +699,10 @@ function Documents() {
               </div>
             </div>
 
-            <div style={styles.filterField}>
+            <div
+              className="documents-filter-field"
+              style={styles.filterField}
+            >
               <label style={styles.label}>Filter by category</label>
               <select
                 style={styles.input}
@@ -692,6 +719,7 @@ function Documents() {
 
             <button
               type="button"
+              className="documents-clear-button"
               style={styles.clearButton}
               onClick={clearFilters}
               disabled={!searchTerm && categoryFilter === "All"}
@@ -724,7 +752,10 @@ function Documents() {
               {ownedDocuments.length > 0 && (
                 <div style={styles.documentGroup}>
                   <h3 style={styles.groupTitle}>My uploads</h3>
-                  <div style={styles.documentGrid}>
+                  <div
+                    className="documents-grid"
+                    style={styles.documentGrid}
+                  >
                     {ownedDocuments.map(renderDocumentCard)}
                   </div>
                 </div>
@@ -733,7 +764,10 @@ function Documents() {
               {!isAdmin && sharedDocuments.length > 0 && (
                 <div style={styles.documentGroup}>
                   <h3 style={styles.groupTitle}>Shared with me</h3>
-                  <div style={styles.documentGrid}>
+                  <div
+                    className="documents-grid"
+                    style={styles.documentGrid}
+                  >
                     {sharedDocuments.map(renderDocumentCard)}
                   </div>
                 </div>

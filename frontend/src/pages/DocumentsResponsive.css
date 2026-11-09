@@ -1,0 +1,132 @@
+
+/* Documents page responsive styling */
+
+.documents-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.documents-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.documents-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.documents-upload-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.documents-filter-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 25px;
+}
+
+.documents-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.documents-card-top,
+.documents-card-meta,
+.documents-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.documents-share-panel {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.documents-permission-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.documents-search-field,
+.documents-filter-field,
+.documents-category-field {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .documents-page {
+    padding: 16px;
+  }
+
+  .documents-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .documents-upload-controls,
+  .documents-filter-panel {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .documents-upload-controls input,
+  .documents-upload-controls select,
+  .documents-upload-controls button,
+  .documents-filter-panel input,
+  .documents-filter-panel select,
+  .documents-filter-panel button {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .documents-card {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .documents-page {
+    padding: 12px;
+  }
+
+  .documents-card-top,
+  .documents-card-meta,
+  .documents-action-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .documents-permission-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

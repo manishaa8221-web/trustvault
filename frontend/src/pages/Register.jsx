@@ -9,6 +9,7 @@ export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -46,8 +47,75 @@ export default function Register() {
   };
 
   return (
-    <div style={s.page}>
-      <div style={s.card}>
+    <div className="trustvault-register-page" style={s.page}>
+      <style>{`
+        .trustvault-register-page,
+        .trustvault-register-page * {
+          box-sizing: border-box;
+        }
+
+        .trustvault-register-page input {
+          color: #17233c !important;
+          -webkit-text-fill-color: #17233c !important;
+          caret-color: #2449a6 !important;
+          opacity: 1 !important;
+        }
+
+        .trustvault-register-page input::placeholder {
+          color: #718096 !important;
+          -webkit-text-fill-color: #718096 !important;
+          opacity: 1 !important;
+        }
+
+        .trustvault-register-page input:-webkit-autofill,
+        .trustvault-register-page input:-webkit-autofill:hover,
+        .trustvault-register-page input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #17233c !important;
+          caret-color: #2449a6 !important;
+          box-shadow: 0 0 0 1000px #ffffff inset !important;
+          transition: background-color 9999s ease-in-out 0s;
+        }
+
+        .trustvault-register-page input:focus {
+          border-color: #2449a6 !important;
+          box-shadow: 0 0 0 3px rgba(36, 73, 166, 0.10);
+          outline: none;
+        }
+
+        .trustvault-register-page .register-password-wrapper {
+          position: relative;
+        }
+
+        .trustvault-register-page .register-password-input {
+          padding-right: 75px !important;
+        }
+
+        .trustvault-register-page .register-password-toggle {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          border: none;
+          background: transparent;
+          color: #2449a6;
+          font-size: 13px;
+          font-weight: bold;
+          cursor: pointer;
+          padding: 6px;
+        }
+
+        .trustvault-register-page .register-submit:hover:not(:disabled) {
+          background: #193c91;
+        }
+
+        @media (max-width: 480px) {
+          .trustvault-register-page .register-card {
+            padding: 26px 20px !important;
+          }
+        }
+      `}</style>
+
+      <div className="register-card" style={s.card}>
         <Link to="/" style={s.back}>
           ← Back to Home
         </Link>
@@ -87,20 +155,36 @@ export default function Register() {
 
           <label style={s.label}>Password</label>
 
-          <input
-            style={s.input}
-            type="password"
-            placeholder="Create a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
-            autoComplete="new-password"
-            required
-          />
+          <div className="register-password-wrapper">
+            <input
+              className="register-password-input"
+              style={s.input}
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={8}
+              autoComplete="new-password"
+              required
+            />
 
-          {error && <p style={s.error}>{error}</p>}
+            <button
+              type="button"
+              className="register-password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+
+          {error && (
+            <p style={s.error} role="alert">
+              {error}
+            </p>
+          )}
 
           <button
+            className="register-submit"
             type="submit"
             style={{
               ...s.button,
@@ -136,7 +220,6 @@ const s = {
   card: {
     width: "100%",
     maxWidth: 430,
-    boxSizing: "border-box",
     background: "#ffffff",
     padding: "35px 38px",
     borderRadius: 16,
@@ -189,7 +272,6 @@ const s = {
 
   input: {
     width: "100%",
-    boxSizing: "border-box",
     display: "block",
     padding: 13,
     border: "1px solid #d5dce8",

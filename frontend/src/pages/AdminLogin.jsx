@@ -15,22 +15,16 @@ function AdminLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (!email.trim() || !password) {
-      setError("Please enter your email and password.");
-      return;
-    }
+    setLoading(true);
 
     try {
-      setLoading(true);
-
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: email.trim(),
+          email: email.trim().toLowerCase(),
           password,
         }),
       });
@@ -38,7 +32,7 @@ function AdminLogin() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed.");
+        throw new Error(data.message || data.error || "Login failed");
       }
 
       const user = data.user || data.data?.user || data.data || data;
@@ -46,11 +40,15 @@ function AdminLogin() {
       const role = user?.role || data.role;
 
       if (role !== "ADMIN") {
-        throw new Error("Access denied. Admin account required.");
+        setError("Access denied. Only administrators can log in here.");
+        setLoading(false);
+        return;
       }
 
       if (!token) {
-        throw new Error("Authentication token was not received.");
+        setError("Login successful, but authentication token was not received.");
+        setLoading(false);
+        return;
       }
 
       localStorage.setItem("token", token);
@@ -58,7 +56,7 @@ function AdminLogin() {
 
       navigate("/admin");
     } catch (err) {
-      setError(err.message || "Something went wrong.");
+      setError(err.message || "Unable to connect to the server.");
     } finally {
       setLoading(false);
     }
@@ -66,6 +64,66 @@ function AdminLogin() {
 
   return (
     <div className="admin-login-page">
+      <div className="admin-login-card">
+        <div className="admin-icon">🔐</div>
+
+        <h1>Admin Login</h1>
+        <p className="admin-subtitle">
+          Sign in to access the TrustVault administration dashboard.
+        </p>
+
+        {error && <div className="admin-error">{error}</div>}
+
+        <form onSubmit={handleLogin}>
+          <label htmlFor="admin-email">Email Address</label>
+          <input
+            id="admin-email"
+            className="admin-input"
+            type="email"
+            placeholder="Enter your admin email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            required
+          />
+
+          <label htmlFor="admin-password">Password</label>
+
+          <div className="admin-password-wrapper">
+            <input
+              id="admin-password"
+              className="admin-input admin-password-input"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+
+            <button
+              type="button"
+              className="admin-show-password"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            className="admin-login-button"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login as Admin"}
+          </button>
+        </form>
+
+        <Link to="/user-login" className="admin-back-link">
+          Back to User Login
+        </Link>
+      </div>
+
       <style>{`
         * {
           box-sizing: border-box;
@@ -74,120 +132,51 @@ function AdminLogin() {
         .admin-login-page {
           min-height: 100vh;
           display: flex;
-          align-items: center;
           justify-content: center;
-          padding: 30px 18px;
-          background:
-            radial-gradient(circle at 15% 15%, #30205c 0%, transparent 35%),
-            radial-gradient(circle at 85% 85%, #202c61 0%, transparent 35%),
-            #080d1c;
-          font-family: Inter, Arial, sans-serif;
-          color: white;
+          align-items: center;
+          padding: 25px;
+          background: linear-gradient(135deg, #080d1c, #14233e, #172b4d);
+          font-family: Arial, sans-serif;
         }
 
-        .admin-container {
+        .admin-login-card {
           width: 100%;
-          max-width: 1000px;
-          min-height: 580px;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.12);
-          border-radius: 22px;
-          background: #11182b;
-          box-shadow: 0 25px 80px rgba(0,0,0,0.45);
+          max-width: 430px;
+          padding: 38px;
+          border: 1px solid #34415b;
+          border-radius: 18px;
+          background: #111a2c;
+          color: #ffffff;
+          box-shadow: 0 15px 45px rgba(0, 0, 0, 0.35);
         }
 
-        .admin-brand {
-          padding: 55px 42px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          background:
-            linear-gradient(145deg, rgba(113,62,214,0.85), rgba(35,44,104,0.95));
+        .admin-icon {
+          text-align: center;
+          font-size: 42px;
+          margin-bottom: 12px;
         }
 
-        .admin-logo {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 23px;
-          font-weight: 800;
-          letter-spacing: -0.5px;
-        }
-
-        .admin-logo-icon {
-          width: 45px;
-          height: 45px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 13px;
-          background: rgba(255,255,255,0.15);
-          border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .admin-brand-content {
-          margin-top: 45px;
-          margin-bottom: 45px;
-        }
-
-        .admin-brand-content h1 {
-          font-size: 38px;
-          line-height: 1.2;
-          margin: 0 0 18px;
-          letter-spacing: -1.2px;
-        }
-
-        .admin-brand-content p {
-          color: #dddafa;
-          font-size: 15px;
-          line-height: 1.8;
-          max-width: 350px;
-        }
-
-        .security-card {
-          display: flex;
-          align-items: center;
-          gap: 13px;
-          padding: 17px;
-          border-radius: 13px;
-          background: rgba(255,255,255,0.1);
-          border: 1px solid rgba(255,255,255,0.15);
-        }
-
-        .security-card span {
-          font-size: 13px;
-          color: #e2e0ff;
-          line-height: 1.6;
-        }
-
-        .admin-form-section {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 55px 48px;
-        }
-
-        .admin-form-section h2 {
-          font-size: 29px;
+        .admin-login-card h1 {
+          text-align: center;
+          font-size: 27px;
           margin: 0 0 10px;
           color: #ffffff;
         }
 
         .admin-subtitle {
-          color: #9ca9c1;
+          text-align: center;
+          color: #aebbd0;
           font-size: 14px;
           line-height: 1.6;
-          margin-bottom: 35px;
+          margin-bottom: 30px;
         }
 
-        .admin-form label {
+        .admin-login-card label {
           display: block;
-          margin-bottom: 9px;
-          color: #dbe3f3;
-          font-size: 13px;
+          color: #e2e8f0;
+          font-size: 14px;
           font-weight: 600;
+          margin-bottom: 9px;
         }
 
         .admin-input {
@@ -196,51 +185,62 @@ function AdminLogin() {
           margin-bottom: 22px;
           border: 1px solid #34415b;
           border-radius: 9px;
-          background: #0b1222;
+          background: #0b1222 !important;
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
-          caret-color: white;
+          caret-color: #ffffff !important;
           font-size: 14px;
           outline: none;
-        }
-
-        .admin-input::placeholder {
-          color: #71809b;
-          -webkit-text-fill-color: #71809b;
+          opacity: 1 !important;
         }
 
         .admin-input:focus {
-          border-color: #9b75ff;
-          box-shadow: 0 0 0 3px rgba(155,117,255,0.13);
+          border-color: #38bdf8;
+          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
         }
 
-        .password-wrapper {
+        .admin-input::placeholder {
+          color: #9ca9c1 !important;
+          -webkit-text-fill-color: #9ca9c1 !important;
+          opacity: 1;
+        }
+
+        .admin-input:-webkit-autofill,
+        .admin-input:-webkit-autofill:hover,
+        .admin-input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #ffffff !important;
+          caret-color: #ffffff !important;
+          box-shadow: 0 0 0 1000px #0b1222 inset !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .admin-password-wrapper {
           position: relative;
         }
 
-        .password-wrapper .admin-input {
-          padding-right: 75px;
+        .admin-password-input {
+          padding-right: 65px;
         }
 
-        .password-toggle {
+        .admin-show-password {
           position: absolute;
           right: 12px;
-          top: 12px;
-          padding: 5px;
-          background: transparent;
+          top: 13px;
           border: none;
-          color: #b6a0ff;
+          background: transparent;
+          color: #38bdf8;
+          font-size: 13px;
+          font-weight: 600;
           cursor: pointer;
-          font-size: 12px;
         }
 
-        .admin-submit {
+        .admin-login-button {
           width: 100%;
-          padding: 15px;
+          padding: 14px;
           margin-top: 5px;
           border: none;
           border-radius: 9px;
-          background: linear-gradient(100deg, #8155ed, #a44ef4);
+          background: linear-gradient(135deg, #0284c7, #2563eb);
           color: white;
           font-size: 15px;
           font-weight: 700;
@@ -248,192 +248,47 @@ function AdminLogin() {
           transition: 0.2s;
         }
 
-        .admin-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(139,83,240,0.3);
+        .admin-login-button:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
         }
 
-        .admin-submit:disabled {
-          opacity: 0.65;
+        .admin-login-button:disabled {
+          opacity: 0.6;
           cursor: not-allowed;
+          transform: none;
         }
 
         .admin-error {
           padding: 12px;
-          margin: 0 0 18px;
-          border: 1px solid #a83d58;
+          margin-bottom: 20px;
+          border: 1px solid #ef4444;
           border-radius: 8px;
-          background: rgba(168,61,88,0.13);
-          color: #ff9eae;
+          background: rgba(239, 68, 68, 0.12);
+          color: #fca5a5;
           font-size: 13px;
           line-height: 1.5;
         }
 
-        .admin-footer {
-          margin-top: 30px;
-          padding-top: 22px;
-          border-top: 1px solid #29344b;
-          text-align: center;
-          color: #8492ab;
-          font-size: 12px;
-          line-height: 1.7;
-        }
-
         .admin-back-link {
-          display: inline-block;
-          margin-top: 22px;
-          color: #b99bff;
+          display: block;
+          margin-top: 24px;
+          text-align: center;
+          color: #7dd3fc;
+          font-size: 14px;
           text-decoration: none;
-          font-size: 13px;
         }
 
         .admin-back-link:hover {
-          color: white;
+          text-decoration: underline;
         }
 
-        @media (max-width: 700px) {
-          .admin-container {
-            grid-template-columns: 1fr;
-            max-width: 440px;
-          }
-
-          .admin-brand {
-            padding: 30px;
-          }
-
-          .admin-brand-content {
-            margin: 35px 0 10px;
-          }
-
-          .admin-brand-content h1 {
-            font-size: 28px;
-          }
-
-          .security-card {
-            display: none;
-          }
-
-          .admin-form-section {
-            padding: 35px 28px;
+        @media (max-width: 480px) {
+          .admin-login-card {
+            padding: 27px 22px;
           }
         }
       `}</style>
-
-      <div className="admin-container">
-
-        {/* LEFT BRANDING SECTION */}
-        <div className="admin-brand">
-          <div className="admin-logo">
-            <div className="admin-logo-icon">
-              <svg
-                width="27"
-                height="27"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="1.8"
-              >
-                <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-            </div>
-            TrustVault
-          </div>
-
-          <div className="admin-brand-content">
-            <h1>
-              Secure Access.
-              <br />
-              Complete Control.
-            </h1>
-
-            <p>
-              Manage your TrustVault platform through a
-              dedicated and secure administrator portal.
-            </p>
-          </div>
-
-          <div className="security-card">
-            <span style={{ fontSize: "25px" }}>🛡️</span>
-            <span>
-              <strong>Protected Admin Portal</strong>
-              <br />
-              Restricted access for authorized administrators only.
-            </span>
-          </div>
-        </div>
-
-        {/* RIGHT LOGIN SECTION */}
-        <div className="admin-form-section">
-          <h2>Welcome Back</h2>
-
-          <p className="admin-subtitle">
-            Sign in with your administrator credentials to continue.
-          </p>
-
-          <form className="admin-form" onSubmit={handleLogin}>
-            <label htmlFor="admin-email">Administrator Email</label>
-
-            <input
-              id="admin-email"
-              className="admin-input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your admin email"
-              autoComplete="username"
-              required
-            />
-
-            <label htmlFor="admin-password">Password</label>
-
-            <div className="password-wrapper">
-              <input
-                id="admin-password"
-                className="admin-input"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                required
-              />
-
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-
-            {error && (
-              <div className="admin-error" role="alert">
-                {error}
-              </div>
-            )}
-
-            <button
-              className="admin-submit"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? "Authenticating..." : "Secure Admin Login →"}
-            </button>
-          </form>
-
-          <div className="admin-footer">
-            <div>🔒 Secure Administrator Authentication</div>
-            <div>Unauthorized access is prohibited.</div>
-          </div>
-
-          <Link to="/user-login" className="admin-back-link">
-            ← Back to User Login
-          </Link>
-        </div>
-
-      </div>
     </div>
   );
 }

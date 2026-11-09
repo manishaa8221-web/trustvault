@@ -7,11 +7,10 @@ export default function Login() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("login");
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,9 +37,7 @@ export default function Login() {
         throw new Error(data.message || "Login failed");
       }
 
-      const role =
-        data.role || data.user?.role || data.data?.role;
-
+      const role = data.role || data.user?.role || data.data?.role;
       const token = data.token || data.data?.token;
 
       if (!["OWNER", "VIEWER"].includes(role)) {
@@ -93,7 +90,9 @@ export default function Login() {
       alert("Account created successfully! Please log in.");
 
       setName("");
+      setEmail("");
       setPassword("");
+      setShowPassword(false);
       setActiveTab("login");
       setError("");
     } catch (err) {
@@ -107,10 +106,78 @@ export default function Login() {
     setActiveTab(tab);
     setError("");
     setPassword("");
+    setShowPassword(false);
   };
 
   return (
-    <div style={s.page}>
+    <div className="trustvault-user-auth" style={s.page}>
+      <style>{`
+        .trustvault-user-auth,
+        .trustvault-user-auth * {
+          box-sizing: border-box;
+        }
+
+        .trustvault-user-auth input {
+          color: #172d3b !important;
+          -webkit-text-fill-color: #172d3b !important;
+          caret-color: #126b70 !important;
+          opacity: 1 !important;
+        }
+
+        .trustvault-user-auth input::placeholder {
+          color: #718096 !important;
+          -webkit-text-fill-color: #718096 !important;
+          opacity: 1 !important;
+        }
+
+        .trustvault-user-auth input:-webkit-autofill,
+        .trustvault-user-auth input:-webkit-autofill:hover,
+        .trustvault-user-auth input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #172d3b !important;
+          caret-color: #126b70 !important;
+          box-shadow: 0 0 0 1000px #fbfdfd inset !important;
+          transition: background-color 9999s ease-in-out 0s;
+        }
+
+        .trustvault-user-auth input:focus {
+          border-color: #126b70 !important;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(18, 107, 112, 0.12);
+        }
+
+        .trustvault-user-auth .password-wrapper {
+          position: relative;
+        }
+
+        .trustvault-user-auth .password-input {
+          padding-right: 75px !important;
+        }
+
+        .trustvault-user-auth .password-toggle {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          border: none;
+          background: transparent;
+          color: #126b70;
+          font-size: 13px;
+          font-weight: bold;
+          cursor: pointer;
+          padding: 6px;
+        }
+
+        .trustvault-user-auth .submit-button:hover:not(:disabled) {
+          background: #0e555a !important;
+        }
+
+        @media (max-width: 480px) {
+          .trustvault-user-auth .auth-card {
+            padding: 25px 20px !important;
+          }
+        }
+      `}</style>
+
       <div style={s.container}>
         <div style={s.welcome}>
           <div style={s.brandIcon}>🔐</div>
@@ -121,7 +188,7 @@ export default function Login() {
           </p>
         </div>
 
-        <div style={s.card}>
+        <div className="auth-card" style={s.card}>
           <div style={s.icon}>👤</div>
 
           <h2 style={s.heading}>User Account</h2>
@@ -191,29 +258,45 @@ export default function Login() {
 
             <label style={s.label}>Password</label>
 
-            <input
-              style={s.input}
-              type="password"
-              placeholder={
-                activeTab === "login"
-                  ? "Enter your password"
-                  : "Create a password"
-              }
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={activeTab === "register" ? 6 : undefined}
-              autoComplete={
-                activeTab === "login"
-                  ? "current-password"
-                  : "new-password"
-              }
-              required
-            />
+            <div className="password-wrapper">
+              <input
+                className="password-input"
+                style={s.input}
+                type={showPassword ? "text" : "password"}
+                placeholder={
+                  activeTab === "login"
+                    ? "Enter your password"
+                    : "Create a password"
+                }
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={activeTab === "register" ? 6 : undefined}
+                autoComplete={
+                  activeTab === "login"
+                    ? "current-password"
+                    : "new-password"
+                }
+                required
+              />
 
-            {error && <p style={s.error}>{error}</p>}
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            {error && (
+              <p style={s.error} role="alert">
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"
+              className="submit-button"
               style={{
                 ...s.button,
                 opacity: loading ? 0.7 : 1,
