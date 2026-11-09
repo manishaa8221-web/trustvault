@@ -201,6 +201,11 @@ export default function Login() {
           outline: 3px solid rgba(18, 107, 112, 0.2);
         }
 
+        .trustvault-user-auth .admin-login-link:hover {
+          color: #0e555a !important;
+          text-decoration: underline;
+        }
+
         @media (max-width: 480px) {
           .trustvault-user-auth .auth-card {
             padding: 25px 20px !important;
@@ -272,7 +277,6 @@ export default function Login() {
                   required
                 />
 
-                {/* ACCOUNT TYPE SELECTION */}
                 <label style={s.label}>Choose Account Type</label>
 
                 <div style={s.roleContainer}>
@@ -409,6 +413,22 @@ export default function Login() {
               </>
             )}
           </p>
+
+          {/* ADMIN LOGIN LINK */}
+          <div style={s.adminSection}>
+            <p style={s.adminText}>
+              Are you an administrator?
+            </p>
+
+            <button
+              type="button"
+              className="admin-login-link"
+              style={s.adminLink}
+              onClick={() => navigate("/admin-login")}
+            >
+              Admin Login
+            </button>
+          </div>
         </div>
       </div>
 
@@ -603,6 +623,29 @@ const s = {
     fontWeight: "bold",
     cursor: "pointer",
     fontSize: 14,
+  },
+
+  adminSection: {
+    textAlign: "center",
+    marginTop: 22,
+    paddingTop: 18,
+    borderTop: "1px solid #edf0f2",
+  },
+
+  adminText: {
+    margin: "0 0 10px",
+    color: "#718096",
+    fontSize: 14,
+  },
+
+  adminLink: {
+    border: 0,
+    padding: 4,
+    background: "transparent",
+    color: "#2563eb",
+    fontWeight: "bold",
+    fontSize: 16,
+    cursor: "pointer",
   },
 
   footer: {
