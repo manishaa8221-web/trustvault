@@ -6,7 +6,7 @@ import API_BASE_URL from "../api";
 export default function Login() {
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,9 +21,11 @@ export default function Login() {
         `${API_BASE_URL}/auth/login`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            username: username.trim(),
+            email: email.trim(),
             password,
           }),
         }
@@ -35,15 +37,21 @@ export default function Login() {
         throw new Error(data.message || "Login failed");
       }
 
-      const role = data.role || data.user?.role || data.data?.role;
+      const role =
+        data.role || data.user?.role || data.data?.role;
+
       const token = data.token || data.data?.token;
 
       if (!["OWNER", "VIEWER"].includes(role)) {
-        throw new Error("This login page is only for user accounts.");
+        throw new Error(
+          "This login page is only for user accounts."
+        );
       }
 
       if (!token) {
-        throw new Error("Login token was not returned by the server.");
+        throw new Error(
+          "Login token was not returned by the server."
+        );
       }
 
       localStorage.setItem("token", token);
@@ -81,15 +89,15 @@ export default function Login() {
           </p>
 
           <form onSubmit={handleLogin}>
-            <label style={s.label}>Username</label>
+            <label style={s.label}>Email Address</label>
 
             <input
               style={s.input}
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
+              type="email"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               required
             />
 
