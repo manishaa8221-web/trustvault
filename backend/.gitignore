@@ -1,0 +1,28 @@
+# Temporary diagnostic scripts
+checkLogin.js
+hashPassword.js
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Private uploaded documents
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor and operating system
+.vscode/
+.DS_Store
+Thumbs.db

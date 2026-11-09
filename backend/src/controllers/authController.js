@@ -1,36 +1,68 @@
+
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { createAuditLog } = require("../services/auditService");
 
 // REGISTER
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Name, email and password are required",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password must contain at least 6 characters",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (existingUser) {
-      return res.status(400).json({
-        message: "User already exists",
+      return res.status(409).json({
+        message: "User already exists. Please log in.",
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
-      role,
+      role: "OWNER",
+      isActive: true,
     });
 
-    res.status(201).json({
+    await createAuditLog({
+      user: user._id,
+      action: "REGISTER",
+      details: "New user registered",
+    });
+
+    return res.status(201).json({
       message: "User registered successfully",
-      user,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
+    console.error("Registration error:", error.message);
+
+    return res.status(500).json({
+      message: "Registration failed",
     });
   }
 };
@@ -40,28 +72,62 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (!user) {
+      await createAuditLog({
+        action: "LOGIN_FAILED",
+        details: `Failed login attempt for ${normalizedEmail}`,
+      });
+
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({
-        message: "Invalid credentials",
+      await createAuditLog({
+        user: user._id,
+        action: "LOGIN_FAILED",
+        details: "Incorrect password entered",
       });
+
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    if (user.isActive === false) {
+      await createAuditLog({
+        user: user._id,
+        action: "LOGIN_DENIED",
+        details: "Login refused because account is deactivated",
+      });
+
+      return res.status(403).json({
+        message: "Your account has been deactivated. Contact the administrator.",
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is missing");
     }
 
     const token = jwt.sign(
       {
-        id: user._id,
+        id: user._id.toString(),
         role: user.role,
       },
       process.env.JWT_SECRET,
@@ -70,15 +136,29 @@ const login = async (req, res) => {
       }
     );
 
-    res.status(200).json({
+    await createAuditLog({
+      user: user._id,
+      action: "LOGIN",
+      details: "User logged in",
+    });
+
+    return res.status(200).json({
       message: "Login successful",
       token,
       role: user.role,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      },
     });
-
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
+    console.error("Login error:", error.message);
+
+    return res.status(500).json({
+      message: "Login failed",
     });
   }
 };

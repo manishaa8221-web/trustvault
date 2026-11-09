@@ -147,3 +147,12 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+# Temporary diagnostic scripts
+backend/checkLogin.js
+backend/hashPassword.js
+
+# Private uploaded documents
+backend/uploads/*
+!backend/uploads/.gitkeep
+# Local security backup copies
+backend/src/TrustVault_Security_Update/
