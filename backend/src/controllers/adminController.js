@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const User = require("../models/User");
@@ -10,16 +11,40 @@ const getDashboardStats = async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const totalUsers = await User.countDocuments();
-    const totalAdmins = await User.countDocuments({ role: "ADMIN" });
-    const totalDocuments = await Document.countDocuments();
-    const totalLogs = await AuditLog.countDocuments();
+    const [
+      totalUsers,
+      totalAdmins,
+      totalDocuments,
+      totalLogs,
+      totalSharedDocuments,
+      totalRevokedPermissions,
+      activeUsersResult,
+    ] = await Promise.all([
+      User.countDocuments(),
 
-    const activeUsersResult = await AuditLog.distinct("user", {
-      action: "LOGIN",
-      user: { $ne: null },
-      createdAt: { $gte: thirtyDaysAgo },
-    });
+      User.countDocuments({ role: "ADMIN" }),
+
+      Document.countDocuments(),
+
+      AuditLog.countDocuments(),
+
+      // Documents shared with at least one other user
+      Document.countDocuments({
+        "permissions.0": { $exists: true },
+      }),
+
+      // Total recorded permission revocations
+      AuditLog.countDocuments({
+        action: "ACCESS_REVOKED",
+      }),
+
+      // Users who logged in during the last 30 days
+      AuditLog.distinct("user", {
+        action: "LOGIN",
+        user: { $ne: null },
+        createdAt: { $gte: thirtyDaysAgo },
+      }),
+    ]);
 
     const activeUsers = activeUsersResult.length;
 
@@ -31,13 +56,17 @@ const getDashboardStats = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+
       statistics: {
         totalUsers,
         activeUsers,
         totalAdmins,
         totalDocuments,
         totalLogs,
+        totalSharedDocuments,
+        totalRevokedPermissions,
       },
+
       recentLogs,
     });
   } catch (error) {
@@ -78,7 +107,6 @@ const updateUserStatus = async (req, res) => {
     const { id } = req.params;
     const { isActive } = req.body;
 
-    // Validate MongoDB ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -86,7 +114,6 @@ const updateUserStatus = async (req, res) => {
       });
     }
 
-    // Validate account status
     if (typeof isActive !== "boolean") {
       return res.status(400).json({
         success: false,
@@ -122,7 +149,7 @@ const updateUserStatus = async (req, res) => {
     user.isActive = isActive;
     await user.save();
 
-    // Record the status change
+    // Record the status change in the immutable audit log
     await AuditLog.create({
       user: req.user.id,
       action: isActive ? "USER_ACTIVATED" : "USER_DEACTIVATED",
@@ -133,7 +160,9 @@ const updateUserStatus = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `User account ${isActive ? "activated" : "deactivated"} successfully`,
+      message: `User account ${
+        isActive ? "activated" : "deactivated"
+      } successfully`,
       user: {
         id: user._id,
         name: user.name,
