@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import API_BASE_URL from "../api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,11 +18,14 @@ export default function Login() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/login",
+        `${API_BASE_URL}/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: username.trim(), password }),
+          body: JSON.stringify({
+            username: username.trim(),
+            password,
+          }),
         }
       );
 
@@ -44,6 +48,7 @@ export default function Login() {
 
       localStorage.setItem("token", token);
       localStorage.setItem("userRole", role);
+
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Unable to connect to server");

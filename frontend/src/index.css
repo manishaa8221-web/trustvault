@@ -17,7 +17,7 @@
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  color-scheme: light ;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -108,4 +108,11 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+input,
+textarea {
+  color: #172d3b !important;
+  -webkit-text-fill-color: #172d3b !important;
+  caret-color: #172d3b;
+  opacity: 1;
 }

@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import API_BASE_URL from "../api";
 
 function Documents() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ function Documents() {
     category: "General",
   });
 
-  const API = "http://localhost:5000/api/documents";
+  const API = `${API_BASE_URL}/documents`;
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("userRole");
   const isAdmin = role === "ADMIN";
@@ -31,7 +32,7 @@ function Documents() {
   const fetchProfile = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/user/profile",
+        `${API_BASE_URL}/user/profile`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

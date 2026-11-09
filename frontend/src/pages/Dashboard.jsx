@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import API_BASE_URL from "../api";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ function Dashboard() {
     const fetchDocuments = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/documents",
+          `${API_BASE_URL}/documents`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

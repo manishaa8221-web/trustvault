@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import API_BASE_URL from "../api";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export default function Register() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/register",
+        `${API_BASE_URL}/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -50,7 +51,8 @@ export default function Register() {
         <Link to="/" style={s.back}>
           ← Back to Home
         </Link>
-                <div style={s.icon}>👤</div>
+
+        <div style={s.icon}>👤</div>
 
         <h1 style={s.heading}>Create User Account</h1>
 
