@@ -7,7 +7,7 @@ const { createAuditLog } = require("../services/auditService");
 // REGISTER
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -20,6 +20,19 @@ const register = async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({
         message: "Password must contain at least 6 characters",
+      });
+    }
+
+    // Allow only OWNER and VIEWER registration
+    const allowedRoles = ["OWNER", "VIEWER"];
+
+    const selectedRole = role
+      ? role.toUpperCase()
+      : "OWNER";
+
+    if (!allowedRoles.includes(selectedRole)) {
+      return res.status(400).json({
+        message: "Invalid role. Choose OWNER or VIEWER.",
       });
     }
 
@@ -39,18 +52,18 @@ const register = async (req, res) => {
       name: name.trim(),
       email: normalizedEmail,
       password: hashedPassword,
-      role: "OWNER",
+      role: selectedRole,
       isActive: true,
     });
 
     await createAuditLog({
       user: user._id,
       action: "REGISTER",
-      details: "New user registered",
+      details: `New ${selectedRole} account registered`,
     });
 
     return res.status(201).json({
-      message: "User registered successfully",
+      message: "Account registered successfully",
       user: {
         id: user._id,
         name: user.name,

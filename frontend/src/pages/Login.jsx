@@ -10,10 +10,12 @@ export default function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState("OWNER");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // LOGIN
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -63,6 +65,7 @@ export default function Login() {
     }
   };
 
+  // REGISTER
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -78,6 +81,7 @@ export default function Login() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
+          role: selectedRole,
         }),
       });
 
@@ -87,11 +91,16 @@ export default function Login() {
         throw new Error(data.message || "Registration failed");
       }
 
-      alert("Account created successfully! Please log in.");
+      alert(
+        `Account created successfully as ${
+          selectedRole === "OWNER" ? "Owner" : "User (Viewer)"
+        }! Please log in.`
+      );
 
       setName("");
       setEmail("");
       setPassword("");
+      setSelectedRole("OWNER");
       setShowPassword(false);
       setActiveTab("login");
       setError("");
@@ -171,6 +180,27 @@ export default function Login() {
           background: #0e555a !important;
         }
 
+        .trustvault-user-auth .role-option {
+          flex: 1;
+          padding: 13px 10px;
+          border: 1px solid #d5e1e5;
+          border-radius: 9px;
+          background: #ffffff;
+          color: #263d4a;
+          text-align: left;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .trustvault-user-auth .role-option.selected {
+          border: 2px solid #126b70;
+          background: #eaf5f4;
+        }
+
+        .trustvault-user-auth .role-option:focus-visible {
+          outline: 3px solid rgba(18, 107, 112, 0.2);
+        }
+
         @media (max-width: 480px) {
           .trustvault-user-auth .auth-card {
             padding: 25px 20px !important;
@@ -241,6 +271,47 @@ export default function Login() {
                   autoComplete="name"
                   required
                 />
+
+                {/* ACCOUNT TYPE SELECTION */}
+                <label style={s.label}>Choose Account Type</label>
+
+                <div style={s.roleContainer}>
+                  <button
+                    type="button"
+                    className={`role-option ${
+                      selectedRole === "OWNER" ? "selected" : ""
+                    }`}
+                    aria-pressed={selectedRole === "OWNER"}
+                    onClick={() => setSelectedRole("OWNER")}
+                  >
+                    <span style={s.roleIcon}>📁</span>
+                    <strong style={s.roleTitle}>Owner</strong>
+                    <span style={s.roleDescription}>
+                      Upload, manage and share your documents.
+                    </span>
+                    {selectedRole === "OWNER" && (
+                      <span style={s.selectedText}>✓ Selected</span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`role-option ${
+                      selectedRole === "VIEWER" ? "selected" : ""
+                    }`}
+                    aria-pressed={selectedRole === "VIEWER"}
+                    onClick={() => setSelectedRole("VIEWER")}
+                  >
+                    <span style={s.roleIcon}>👤</span>
+                    <strong style={s.roleTitle}>User (Viewer)</strong>
+                    <span style={s.roleDescription}>
+                      Access documents shared with you.
+                    </span>
+                    {selectedRole === "VIEWER" && (
+                      <span style={s.selectedText}>✓ Selected</span>
+                    )}
+                  </button>
+                </div>
               </>
             )}
 
@@ -452,6 +523,39 @@ const s = {
     fontSize: 14,
     color: "#263d4a",
     margin: "18px 0 8px",
+  },
+
+  roleContainer: {
+    display: "flex",
+    gap: 10,
+    width: "100%",
+  },
+
+  roleIcon: {
+    display: "block",
+    fontSize: 23,
+    marginBottom: 8,
+  },
+
+  roleTitle: {
+    display: "block",
+    fontSize: 14,
+    marginBottom: 7,
+  },
+
+  roleDescription: {
+    display: "block",
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: "#64748b",
+  },
+
+  selectedText: {
+    display: "block",
+    marginTop: 9,
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#126b70",
   },
 
   input: {
