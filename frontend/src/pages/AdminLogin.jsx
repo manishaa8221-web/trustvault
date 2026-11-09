@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../api";
 
 function AdminLogin() {
@@ -41,13 +41,13 @@ function AdminLogin() {
 
       if (role !== "ADMIN") {
         setError("Access denied. Only administrators can log in here.");
-        setLoading(false);
         return;
       }
 
       if (!token) {
-        setError("Login successful, but authentication token was not received.");
-        setLoading(false);
+        setError(
+          "Login successful, but authentication token was not received."
+        );
         return;
       }
 
@@ -68,6 +68,7 @@ function AdminLogin() {
         <div className="admin-icon">🔐</div>
 
         <h1>Admin Login</h1>
+
         <p className="admin-subtitle">
           Sign in to access the TrustVault administration dashboard.
         </p>
@@ -76,6 +77,7 @@ function AdminLogin() {
 
         <form onSubmit={handleLogin}>
           <label htmlFor="admin-email">Email Address</label>
+
           <input
             id="admin-email"
             className="admin-input"
@@ -118,10 +120,6 @@ function AdminLogin() {
             {loading ? "Logging in..." : "Login as Admin"}
           </button>
         </form>
-
-        <Link to="/user-login" className="admin-back-link">
-          Back to User Login
-        </Link>
       </div>
 
       <style>{`
@@ -268,19 +266,6 @@ function AdminLogin() {
           color: #fca5a5;
           font-size: 13px;
           line-height: 1.5;
-        }
-
-        .admin-back-link {
-          display: block;
-          margin-top: 24px;
-          text-align: center;
-          color: #7dd3fc;
-          font-size: 14px;
-          text-decoration: none;
-        }
-
-        .admin-back-link:hover {
-          text-decoration: underline;
         }
 
         @media (max-width: 480px) {

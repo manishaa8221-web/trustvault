@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../api";
 
 export default function Login() {
@@ -339,12 +339,6 @@ export default function Login() {
             )}
           </p>
         </div>
-
-        <div style={s.adminLink}>
-          <Link to="/admin-login" style={s.adminLinkText}>
-            Admin Login
-          </Link>
-        </div>
       </div>
 
       <footer style={s.footer}>
@@ -505,18 +499,6 @@ const s = {
     fontWeight: "bold",
     cursor: "pointer",
     fontSize: 14,
-  },
-
-  adminLink: {
-    textAlign: "center",
-    marginTop: 20,
-  },
-
-  adminLinkText: {
-    color: "#d4eeee",
-    fontSize: 14,
-    textDecoration: "none",
-    fontWeight: "bold",
   },
 
   footer: {
