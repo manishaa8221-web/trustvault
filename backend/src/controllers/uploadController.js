@@ -1,3 +1,4 @@
+
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -24,15 +25,14 @@ const validateFileContent = (file) => {
       [0x03, 0x05, 0x07].includes(buffer[2]) &&
       [0x04, 0x06, 0x08].includes(buffer[3]);
 
-    // DOCX is a ZIP-based format containing this entry name.
-    const hasWordDocument =
-      buffer.includes(Buffer.from("word/document.xml"));
+    const hasWordDocument = buffer.includes(
+      Buffer.from("word/document.xml")
+    );
 
     return hasZipSignature && hasWordDocument;
   }
 
   if (extension === ".txt") {
-    // Reject binary data and invalid UTF-8 text.
     if (buffer.includes(0)) {
       return false;
     }
@@ -43,7 +43,7 @@ const validateFileContent = (file) => {
   return false;
 };
 
-// Upload a document
+// UPLOAD DOCUMENT
 const uploadDocument = async (req, res) => {
   let savedPath;
   let createdDocument;
@@ -78,8 +78,6 @@ const uploadDocument = async (req, res) => {
         ? req.body.category.trim()
         : "General";
 
-    // Generate a random filename. Never use the supplied filename
-    // as the physical filename on the server.
     const extension = path.extname(req.file.originalname).toLowerCase();
     const storageName = `${crypto.randomUUID()}${extension}`;
 
@@ -121,7 +119,6 @@ const uploadDocument = async (req, res) => {
       document: createdDocument,
     });
   } catch (error) {
-    // Remove incomplete database/file records if upload processing fails.
     if (createdDocument) {
       await Document.findByIdAndDelete(createdDocument._id);
     }
@@ -138,7 +135,8 @@ const uploadDocument = async (req, res) => {
   }
 };
 
-// Download a document after permission middleware has approved access.
+// DOWNLOAD DOCUMENT
+// The route's READ permission middleware runs before this controller.
 const downloadDocument = async (req, res) => {
   try {
     const document = req.document;
@@ -149,9 +147,9 @@ const downloadDocument = async (req, res) => {
       });
     }
 
-    const filePath = path.join(UPLOAD_DIR, document.storageName);
+    const filePath = path.resolve(UPLOAD_DIR, document.storageName);
 
-    // Make sure the resolved file remains inside the upload directory.
+    // Ensure the file is inside the upload directory.
     if (path.dirname(filePath) !== UPLOAD_DIR) {
       return res.status(400).json({
         message: "Invalid file path",
@@ -166,16 +164,37 @@ const downloadDocument = async (req, res) => {
       });
     }
 
-    await AuditLog.create({
-      user: req.user.id,
-      document: document._id,
-      action: "DOWNLOAD_DOCUMENT",
-      details: `Downloaded ${document.originalName}`,
-    });
-
+    // Record the download after the file transfer completes successfully.
     return res.download(
       filePath,
-      document.originalName || "document"
+      document.originalName || "document",
+      async (error) => {
+        if (error) {
+          console.error("File download error:", error.message);
+
+          if (!res.headersSent) {
+            return res.status(500).json({
+              message: "Could not download document",
+            });
+          }
+
+          return;
+        }
+
+        try {
+          await AuditLog.create({
+            user: req.user.id,
+            document: document._id,
+            action: "DOCUMENT_DOWNLOADED",
+            details: `Downloaded ${document.originalName || document.title}`,
+          });
+        } catch (auditError) {
+          console.error(
+            "Download audit logging error:",
+            auditError.message
+          );
+        }
+      }
     );
   } catch (error) {
     console.error("Download error:", error.message);

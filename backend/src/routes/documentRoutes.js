@@ -30,24 +30,29 @@ const protect = require("../middleware/authMiddleware");
 const canAccessDocument = require("../middleware/documentAccess");
 const uploadFile = require("../middleware/fileUpload");
 
-// Upload document
+// UPLOAD DOCUMENT
 router.post("/upload", protect, uploadFile, uploadDocument);
 
-// Create and retrieve documents
+// CREATE AND RETRIEVE DOCUMENTS
 router.post("/", protect, createDocument);
 router.get("/", protect, getDocuments);
 
-// Share and revoke document access
+// SHARE AND REVOKE DOCUMENT ACCESS
 router.post("/:id/share", protect, grantAccess);
 router.delete("/:id/share", protect, revokeAccess);
 
-// View audit logs (document owner only)
+// VIEW AUDIT LOGS
 router.get("/:id/audit-logs", protect, getDocumentAuditLogs);
 
-// Update document
-router.put("/:id", protect, canAccessDocument("EDIT"), updateDocument);
+// UPDATE DOCUMENT
+router.put(
+  "/:id",
+  protect,
+  canAccessDocument("EDIT"),
+  updateDocument
+);
 
-// Delete document - OWNER ONLY
+// DELETE DOCUMENT - OWNER ONLY
 router.delete("/:id", protect, async (req, res) => {
   try {
     const documentId = req.params.id;
@@ -127,7 +132,7 @@ router.delete("/:id", protect, async (req, res) => {
   }
 });
 
-// Download document
+// DOWNLOAD DOCUMENT - READ ACCESS REQUIRED
 router.get(
   "/:id/download",
   protect,
@@ -135,13 +140,31 @@ router.get(
   downloadDocument
 );
 
-// View document
+// VIEW DOCUMENT - READ ACCESS REQUIRED
 router.get(
   "/:id",
   protect,
   canAccessDocument("READ"),
-  (req, res) => {
-    return res.status(200).json(req.document);
+  async (req, res) => {
+    try {
+      const document = req.document;
+
+      // Record who viewed the document and when.
+      await AuditLog.create({
+        user: req.user.id,
+        document: document._id,
+        action: "DOCUMENT_VIEWED",
+        details: `Viewed document "${document.title}"`,
+      });
+
+      return res.status(200).json(document);
+    } catch (error) {
+      console.error("Document view audit error:", error.message);
+
+      return res.status(500).json({
+        message: "Could not retrieve document",
+      });
+    }
   }
 );
 

@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 
@@ -8,30 +9,29 @@ const {
   getDashboardStats,
   getAllUsers,
   updateUserStatus,
+  getAllDocuments,
+  updateDocumentAccess,
 } = require("../controllers/adminController");
 
+const {
+  getAllAuditLogs,
+} = require("../controllers/auditLogController");
+
+// All admin routes require an authenticated ADMIN.
+router.use(protect, authorize("ADMIN"));
+
 // ADMIN DASHBOARD
-router.get(
-  "/dashboard",
-  protect,
-  authorize("ADMIN"),
-  getDashboardStats
-);
+router.get("/dashboard", getDashboardStats);
 
-// GET ALL REGISTERED USERS
-router.get(
-  "/users",
-  protect,
-  authorize("ADMIN"),
-  getAllUsers
-);
+// USER MANAGEMENT
+router.get("/users", getAllUsers);
+router.patch("/users/:id/status", updateUserStatus);
 
-// ACTIVATE OR DEACTIVATE USER
-router.patch(
-  "/users/:id/status",
-  protect,
-  authorize("ADMIN"),
-  updateUserStatus
-);
+// DOCUMENT MANAGEMENT
+router.get("/documents", getAllDocuments);
+router.patch("/documents/:id/access", updateDocumentAccess);
+
+// COMPLETE SYSTEM ACTIVITY HISTORY
+router.get("/audit-logs", getAllAuditLogs);
 
 module.exports = router;
