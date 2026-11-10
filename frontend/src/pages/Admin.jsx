@@ -6,30 +6,97 @@ import API_BASE_URL from "../api";
 export default function Admin() {
   const navigate = useNavigate();
 
+  const token = localStorage.getItem("token");
+
   const [stats, setStats] = useState(null);
   const [logs, setLogs] = useState([]);
   const [users, setUsers] = useState([]);
+  const [documents, setDocuments] = useState([]);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [documentSearch, setDocumentSearch] = useState("");
+  const [activitySearch, setActivitySearch] = useState("");
+  const [activityFilter, setActivityFilter] = useState("ALL");
+
+  const [selectedUsers, setSelectedUsers] = useState({});
+  const [selectedAccess, setSelectedAccess] = useState({});
+
   const [error, setError] = useState("");
   const [usersError, setUsersError] = useState("");
+  const [documentsError, setDocumentsError] = useState("");
+  const [activityError, setActivityError] = useState("");
+
   const [successMessage, setSuccessMessage] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(true);
+
   const [refreshing, setRefreshing] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState(null);
+  const [updatingDocumentId, setUpdatingDocumentId] = useState(null);
 
-  const token = localStorage.getItem("token");
+  // COMMON API HEADERS
+  const getHeaders = () => ({
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  });
 
+  // FORMAT DATE AND TIME IN INDIAN STANDARD TIME
+  const formatIST = (date) => {
+    if (!date) return "-";
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) return "-";
+
+    return new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    }).format(parsedDate) + " IST";
+  };
+
+  // LOAD DASHBOARD STATISTICS
+  const fetchAdminData = async () => {
+    try {
+      setError("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/dashboard`,
+        { headers: getHeaders() }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to load dashboard");
+      }
+
+      setStats(data.statistics || {});
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // LOAD ALL USERS
   const fetchUsers = async () => {
     try {
       setUsersLoading(true);
       setUsersError("");
 
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/admin/users`,
+        { headers: getHeaders() }
+      );
 
       const data = await response.json();
 
@@ -45,31 +112,61 @@ export default function Admin() {
     }
   };
 
-  const fetchAdminData = async () => {
+  // LOAD ALL DOCUMENTS IN THE SYSTEM
+  const fetchDocuments = async () => {
     try {
-      setError("");
+      setDocumentsLoading(true);
+      setDocumentsError("");
 
-      const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/admin/documents`,
+        { headers: getHeaders() }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Unable to load dashboard");
+        throw new Error(data.message || "Unable to load documents");
       }
 
-      setStats(data.statistics || {});
-      setLogs(data.recentLogs || []);
+      setDocuments(
+        Array.isArray(data.documents)
+          ? data.documents
+          : []
+      );
     } catch (err) {
-      setError(err.message);
+      setDocumentsError(err.message);
     } finally {
-      setLoading(false);
+      setDocumentsLoading(false);
     }
   };
 
+  // LOAD SYSTEM-WIDE ACTIVITY
+  const fetchActivityLogs = async () => {
+    try {
+      setActivityLoading(true);
+      setActivityError("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/audit-logs?page=1&limit=100`,
+        { headers: getHeaders() }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to load activity");
+      }
+
+      setLogs(data.logs || []);
+    } catch (err) {
+      setActivityError(err.message);
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  // INITIAL LOAD
   useEffect(() => {
     const role = localStorage.getItem("userRole");
 
@@ -80,24 +177,33 @@ export default function Admin() {
 
     fetchAdminData();
     fetchUsers();
+    fetchDocuments();
+    fetchActivityLogs();
   }, [navigate]);
 
+  // REFRESH ALL ADMIN DATA
   const refreshDashboard = async () => {
     setRefreshing(true);
 
     await Promise.all([
       fetchAdminData(),
       fetchUsers(),
+      fetchDocuments(),
+      fetchActivityLogs(),
     ]);
 
     setRefreshing(false);
   };
 
+  // ACTIVATE OR DEACTIVATE USER
   const changeUserStatus = async (user) => {
     const currentlyActive = user.isActive !== false;
     const newStatus = !currentlyActive;
+
     const action = newStatus ? "activate" : "deactivate";
-    const displayName = user.name || user.username || user.email || "this user";
+
+    const displayName =
+      user.name || user.username || user.email || "this user";
 
     if (!window.confirm(`Are you sure you want to ${action} ${displayName}?`)) {
       return;
@@ -112,10 +218,7 @@ export default function Admin() {
         `${API_BASE_URL}/admin/users/${user._id}/status`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: getHeaders(),
           body: JSON.stringify({ isActive: newStatus }),
         }
       );
@@ -123,16 +226,17 @@ export default function Admin() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Unable to update account status");
+        throw new Error(data.message || "Unable to update user");
       }
 
       setSuccessMessage(
-        data.message || "Account status updated successfully."
+        data.message || "User status updated successfully."
       );
 
       await Promise.all([
         fetchUsers(),
         fetchAdminData(),
+        fetchActivityLogs(),
       ]);
     } catch (err) {
       setUsersError(err.message);
@@ -141,12 +245,89 @@ export default function Admin() {
     }
   };
 
+  // ADMIN GRANTS OR REVOKES DOCUMENT ACCESS
+  const changeDocumentAccess = async (document) => {
+    const documentId = document._id;
+    const userId = selectedUsers[documentId];
+    const access = selectedAccess[documentId] || "READ";
+
+    if (!userId) {
+      setDocumentsError("Please select a user first.");
+      return;
+    }
+
+    const selectedUser = users.find(
+      (user) => user._id === userId
+    );
+
+    const documentName = document.title || "this document";
+
+    const accessLabel =
+      access === "NO ACCESS"
+        ? "revoke access to"
+        : `grant ${access} access to`;
+
+    const userName =
+      selectedUser?.name || selectedUser?.email || "this user";
+
+    if (
+      !window.confirm(
+        `Are you sure you want to ${accessLabel} "${documentName}" for ${userName}?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setUpdatingDocumentId(documentId);
+      setDocumentsError("");
+      setSuccessMessage("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/documents/${documentId}/access`,
+        {
+          method: "PATCH",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            userId,
+            access,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Unable to update document access"
+        );
+      }
+
+      setSuccessMessage(
+        data.message ||
+          `Document access updated to ${access} successfully.`
+      );
+
+      await Promise.all([
+        fetchDocuments(),
+        fetchActivityLogs(),
+        fetchAdminData(),
+      ]);
+    } catch (err) {
+      setDocumentsError(err.message);
+    } finally {
+      setUpdatingDocumentId(null);
+    }
+  };
+
+  // LOGOUT
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");
     navigate("/admin-login");
   };
 
+  // SEARCH USERS
   const filteredUsers = users.filter((user) => {
     const search = searchTerm.trim().toLowerCase();
 
@@ -157,6 +338,48 @@ export default function Admin() {
       (user.role || "").toLowerCase().includes(search)
     );
   });
+
+  // SEARCH DOCUMENTS
+  const filteredDocuments = documents.filter((document) => {
+    const search = documentSearch.trim().toLowerCase();
+
+    return (
+      (document.title || "").toLowerCase().includes(search) ||
+      (document.category || "").toLowerCase().includes(search) ||
+      (document.owner?.name || "").toLowerCase().includes(search) ||
+      (document.owner?.email || "").toLowerCase().includes(search)
+    );
+  });
+
+  // FILTER ACTIVITY
+  const filteredLogs = logs.filter((log) => {
+    const matchesAction =
+      activityFilter === "ALL" || log.action === activityFilter;
+
+    const search = activitySearch.trim().toLowerCase();
+
+    const matchesSearch =
+      (log.user?.name || "").toLowerCase().includes(search) ||
+      (log.user?.email || "").toLowerCase().includes(search) ||
+      (log.document?.title || "").toLowerCase().includes(search) ||
+      (log.action || "").toLowerCase().includes(search);
+
+    return matchesAction && matchesSearch;
+  });
+
+  // DOCUMENT PERMISSION HELPER
+  const getPermission = (document, userId) => {
+    const permission = document.permissions?.find((item) => {
+      const permissionUser =
+        typeof item.user === "object"
+          ? item.user?._id
+          : item.user;
+
+      return String(permissionUser) === String(userId);
+    });
+
+    return permission?.access || "NO ACCESS";
+  };
 
   if (loading) {
     return (
@@ -214,8 +437,13 @@ export default function Admin() {
     },
   ];
 
+  const activityTypes = [
+    ...new Set(logs.map((log) => log.action).filter(Boolean)),
+  ];
+
   return (
     <div style={styles.page}>
+      {/* HEADER */}
       <header style={styles.header}>
         <div style={styles.brand}>
           <div style={styles.brandIcon}>🔐</div>
@@ -239,13 +467,18 @@ export default function Admin() {
       </header>
 
       <main style={styles.main}>
+        {/* WELCOME */}
         <section style={styles.welcome}>
           <div>
             <p style={styles.eyebrow}>PLATFORM CONTROL CENTER</p>
-            <h2 style={styles.welcomeTitle}>Welcome, Administrator</h2>
+
+            <h2 style={styles.welcomeTitle}>
+              Welcome, Administrator
+            </h2>
+
             <p style={styles.welcomeText}>
-              Monitor users, manage documents and review security activity
-              across your TrustVault platform.
+              Monitor users, manage documents, control permissions
+              and review security activity across TrustVault.
             </p>
           </div>
 
@@ -260,15 +493,19 @@ export default function Admin() {
 
         {error && <p style={styles.error}>{error}</p>}
 
+        {successMessage && (
+          <p style={styles.success}>{successMessage}</p>
+        )}
+
+        {/* PLATFORM STATISTICS */}
         <section>
           <div style={styles.sectionHeading}>
-            <div>
-              <p style={styles.eyebrow}>AT A GLANCE</p>
-              <h2 style={styles.sectionTitle}>Platform Overview</h2>
-              <p style={styles.sectionDescription}>
-                Important statistics and security metrics from your platform.
-              </p>
-            </div>
+            <p style={styles.eyebrow}>AT A GLANCE</p>
+            <h2 style={styles.sectionTitle}>Platform Overview</h2>
+
+            <p style={styles.sectionDescription}>
+              Important statistics and security metrics from your platform.
+            </p>
           </div>
 
           <div style={styles.grid}>
@@ -285,40 +522,14 @@ export default function Admin() {
           </div>
         </section>
 
+        {/* USER MANAGEMENT */}
         <section style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <div>
-              <p style={styles.eyebrow}>DOCUMENT CONTROL</p>
-              <h2 style={styles.sectionTitle}>Document Management</h2>
-              <p style={styles.sectionDescription}>
-                Access and manage documents uploaded by your administrator
-                account.
-              </p>
-            </div>
-
-            <div style={styles.largeIcon}>📂</div>
-          </div>
-
-          <button
-            onClick={() => navigate("/documents")}
-            style={styles.primaryButton}
-          >
-            Manage My Documents <span>→</span>
-          </button>
-        </section>
-
-        <section style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <div>
-              <p style={styles.eyebrow}>ACCOUNT CONTROL</p>
-              <h2 style={styles.sectionTitle}>User Management</h2>
-              <p style={styles.sectionDescription}>
-                Search registered users and manage their account status.
-              </p>
-            </div>
-
-            <div style={styles.largeIcon}>👤</div>
-          </div>
+          <SectionHeading
+            eyebrow="ACCOUNT CONTROL"
+            title="User Management"
+            description="Search registered users and manage their account status."
+            icon="👤"
+          />
 
           <input
             type="text"
@@ -327,10 +538,6 @@ export default function Admin() {
             onChange={(e) => setSearchTerm(e.target.value)}
             style={styles.search}
           />
-
-          {successMessage && (
-            <p style={styles.success}>{successMessage}</p>
-          )}
 
           {usersLoading ? (
             <p style={styles.muted}>Loading users...</p>
@@ -368,7 +575,7 @@ export default function Admin() {
                             <td style={styles.td}>
                               <div style={styles.userCell}>
                                 <div style={styles.avatar}>
-                                  {(user.name || user.username || user.email || "U")
+                                  {(user.name || user.email || "U")
                                     .charAt(0)
                                     .toUpperCase()}
                                 </div>
@@ -388,9 +595,7 @@ export default function Admin() {
                             </td>
 
                             <td style={styles.td}>
-                              {user.createdAt
-                                ? new Date(user.createdAt).toLocaleDateString()
-                                : "-"}
+                              {formatIST(user.createdAt)}
                             </td>
 
                             <td style={styles.td}>
@@ -439,21 +644,208 @@ export default function Admin() {
           )}
         </section>
 
+        {/* DOCUMENT MANAGEMENT AND ACCESS CONTROL */}
         <section style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <div>
-              <p style={styles.eyebrow}>SECURITY MONITORING</p>
-              <h2 style={styles.sectionTitle}>Recent Activity</h2>
-              <p style={styles.sectionDescription}>
-                Review the latest recorded actions performed on TrustVault.
-              </p>
-            </div>
+          <SectionHeading
+            eyebrow="DOCUMENT CONTROL"
+            title="All Documents & Access Management"
+            description="View documents belonging to all owners and manage user permissions."
+            icon="📂"
+          />
 
-            <div style={styles.largeIcon}>🛡️</div>
+          <input
+            type="text"
+            placeholder="Search by document, category or owner..."
+            value={documentSearch}
+            onChange={(e) => setDocumentSearch(e.target.value)}
+            style={styles.search}
+          />
+
+          {documentsLoading ? (
+            <p style={styles.muted}>Loading all documents...</p>
+          ) : documentsError ? (
+            <p style={styles.error}>{documentsError}</p>
+          ) : filteredDocuments.length === 0 ? (
+            <p style={styles.muted}>No documents found.</p>
+          ) : (
+            <>
+              <p style={styles.userCount}>
+                Showing {filteredDocuments.length} of {documents.length} documents
+              </p>
+
+              <div style={styles.documentGrid}>
+                {filteredDocuments.map((document) => {
+                  const documentId = document._id;
+
+                  const eligibleUsers = users.filter(
+                    (user) =>
+                      user.role !== "ADMIN" &&
+                      String(user._id) !== String(
+                        typeof document.owner === "object"
+                          ? document.owner?._id
+                          : document.owner
+                      )
+                  );
+
+                  const permissionUsers = users.filter(
+                    (user) =>
+                      getPermission(document, user._id) !== "NO ACCESS"
+                  );
+
+                  return (
+                    <div key={documentId} style={styles.documentCard}>
+                      <div style={styles.documentTop}>
+                        <div style={styles.documentIcon}>📄</div>
+
+                        <span style={styles.categoryBadge}>
+                          {document.category || "General"}
+                        </span>
+                      </div>
+
+                      <h3 style={styles.documentTitle}>
+                        {document.title || "Untitled Document"}
+                      </h3>
+
+                      <p style={styles.documentInfo}>
+                        Owner:{" "}
+                        {document.owner?.name ||
+                          document.owner?.email ||
+                          "Unknown"}
+                      </p>
+
+                      <p style={styles.documentInfo}>
+                        Created: {formatIST(document.createdAt)}
+                      </p>
+
+                      <p style={styles.documentInfo}>
+                        Current shared users: {permissionUsers.length}
+                      </p>
+
+                      <div style={styles.permissionList}>
+                        <strong style={styles.permissionHeading}>
+                          Current permissions
+                        </strong>
+
+                        {permissionUsers.length === 0 ? (
+                          <p style={styles.muted}>Not shared with anyone.</p>
+                        ) : (
+                          permissionUsers.map((user) => (
+                            <div
+                              key={user._id}
+                              style={styles.permissionRow}
+                            >
+                              <span>{user.name || user.email}</span>
+                              <span style={styles.permissionBadge}>
+                                {getPermission(document, user._id)}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div style={styles.accessControls}>
+                        <label style={styles.fieldLabel}>
+                          Select user
+                        </label>
+
+                        <select
+                          value={selectedUsers[documentId] || ""}
+                          onChange={(e) =>
+                            setSelectedUsers((previous) => ({
+                              ...previous,
+                              [documentId]: e.target.value,
+                            }))
+                          }
+                          style={styles.select}
+                        >
+                          <option value="">Choose a user</option>
+
+                          {eligibleUsers.map((user) => (
+                            <option key={user._id} value={user._id}>
+                              {user.name || user.email} ({user.role})
+                            </option>
+                          ))}
+                        </select>
+
+                        <label style={styles.fieldLabel}>
+                          Access permission
+                        </label>
+
+                        <select
+                          value={selectedAccess[documentId] || "READ"}
+                          onChange={(e) =>
+                            setSelectedAccess((previous) => ({
+                              ...previous,
+                              [documentId]: e.target.value,
+                            }))
+                          }
+                          style={styles.select}
+                        >
+                          <option value="READ">READ - View document</option>
+                          <option value="EDIT">EDIT - Edit document</option>
+                          <option value="NO ACCESS">NO ACCESS - Revoke</option>
+                        </select>
+
+                        <button
+                          onClick={() => changeDocumentAccess(document)}
+                          disabled={
+                            updatingDocumentId === documentId ||
+                            eligibleUsers.length === 0
+                          }
+                          style={styles.accessButton}
+                        >
+                          {updatingDocumentId === documentId
+                            ? "Updating access..."
+                            : "Update Access"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </section>
+
+        {/* SYSTEM ACTIVITY HISTORY */}
+        <section style={styles.section}>
+          <SectionHeading
+            eyebrow="SECURITY MONITORING"
+            title="System Activity History"
+            description="See who viewed, downloaded, edited, shared or revoked documents and when."
+            icon="🛡️"
+          />
+
+          <div style={styles.filterRow}>
+            <input
+              type="text"
+              placeholder="Search user, document or action..."
+              value={activitySearch}
+              onChange={(e) => setActivitySearch(e.target.value)}
+              style={styles.search}
+            />
+
+            <select
+              value={activityFilter}
+              onChange={(e) => setActivityFilter(e.target.value)}
+              style={styles.filterSelect}
+            >
+              <option value="ALL">All activities</option>
+
+              {activityTypes.map((action) => (
+                <option key={action} value={action}>
+                  {action}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {logs.length === 0 ? (
-            <p style={styles.muted}>No recent activity available.</p>
+          {activityLoading ? (
+            <p style={styles.muted}>Loading system activity...</p>
+          ) : activityError ? (
+            <p style={styles.error}>{activityError}</p>
+          ) : filteredLogs.length === 0 ? (
+            <p style={styles.muted}>No matching activity found.</p>
           ) : (
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
@@ -463,12 +855,12 @@ export default function Admin() {
                     <th style={styles.th}>User</th>
                     <th style={styles.th}>Document</th>
                     <th style={styles.th}>Details</th>
-                    <th style={styles.th}>Date & Time</th>
+                    <th style={styles.th}>Date & Time (IST)</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {logs.map((log, index) => (
+                  {filteredLogs.map((log, index) => (
                     <tr key={log._id || index}>
                       <td style={styles.td}>
                         <span style={styles.actionBadge}>
@@ -477,22 +869,21 @@ export default function Admin() {
                       </td>
 
                       <td style={styles.td}>
-                        {log.user?.email ||
-                          log.user?.username ||
-                          log.user?.name ||
-                          "-"}
+                        {log.user?.name ||
+                          log.user?.email ||
+                          "Unknown user"}
                       </td>
 
                       <td style={styles.td}>
-                        {log.document?.title || "-"}
+                        {log.document?.title || "No document"}
                       </td>
 
-                      <td style={styles.td}>{log.details || "-"}</td>
+                      <td style={styles.td}>
+                        {log.details || "-"}
+                      </td>
 
                       <td style={styles.td}>
-                        {log.createdAt
-                          ? new Date(log.createdAt).toLocaleString()
-                          : "-"}
+                        {formatIST(log.createdAt)}
                       </td>
                     </tr>
                   ))}
@@ -500,6 +891,10 @@ export default function Admin() {
               </table>
             </div>
           )}
+
+          <p style={styles.timeNote}>
+            All displayed timestamps use Asia/Kolkata (IST).
+          </p>
         </section>
 
         <footer style={styles.footer}>
@@ -510,6 +905,22 @@ export default function Admin() {
   );
 }
 
+// REUSABLE SECTION HEADING
+function SectionHeading({ eyebrow, title, description, icon }) {
+  return (
+    <div style={styles.sectionHeader}>
+      <div>
+        <p style={styles.eyebrow}>{eyebrow}</p>
+        <h2 style={styles.sectionTitle}>{title}</h2>
+        <p style={styles.sectionDescription}>{description}</p>
+      </div>
+
+      <div style={styles.largeIcon}>{icon}</div>
+    </div>
+  );
+}
+
+// REUSABLE STATISTICS CARD
 function Stat({ icon, title, value, color, subtitle }) {
   return (
     <div style={styles.statCard}>
@@ -523,11 +934,14 @@ function Stat({ icon, title, value, color, subtitle }) {
         {Number(value).toLocaleString()}
       </h2>
 
-      {subtitle && <p style={styles.statSubtitle}>{subtitle}</p>}
+      {subtitle && (
+        <p style={styles.statSubtitle}>{subtitle}</p>
+      )}
     </div>
   );
 }
 
+// DASHBOARD STYLES
 const styles = {
   page: {
     minHeight: "100vh",
@@ -766,17 +1180,6 @@ const styles = {
     flexShrink: 0,
   },
 
-  primaryButton: {
-    padding: "12px 19px",
-    border: 0,
-    borderRadius: 8,
-    background: "linear-gradient(110deg, #7044c5, #9859db)",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    fontSize: 14,
-  },
-
   search: {
     width: "100%",
     maxWidth: 470,
@@ -789,6 +1192,43 @@ const styles = {
     outlineColor: "#9874e8",
     background: "#0b1120",
     color: "#f1f0fa",
+  },
+
+  filterRow: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+
+  filterSelect: {
+    padding: 13,
+    marginBottom: 17,
+    background: "#0b1120",
+    color: "#f1f0fa",
+    border: "1px solid #34334f",
+    borderRadius: 8,
+    minWidth: 180,
+  },
+
+  select: {
+    width: "100%",
+    padding: 11,
+    marginTop: 7,
+    marginBottom: 13,
+    background: "#0b1120",
+    color: "#f1f0fa",
+    border: "1px solid #34334f",
+    borderRadius: 7,
+    boxSizing: "border-box",
+  },
+
+  fieldLabel: {
+    display: "block",
+    color: "#c4b5fd",
+    fontSize: 12,
+    fontWeight: "bold",
+    marginTop: 10,
   },
 
   userCount: {
@@ -901,6 +1341,100 @@ const styles = {
     fontWeight: "bold",
   },
 
+  documentGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: 17,
+  },
+
+  documentCard: {
+    background: "#151b30",
+    border: "1px solid #34304e",
+    borderRadius: 12,
+    padding: 19,
+    minWidth: 0,
+  },
+
+  documentTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  documentIcon: {
+    fontSize: 26,
+  },
+
+  categoryBadge: {
+    background: "#30264d",
+    color: "#d0bcff",
+    padding: "6px 10px",
+    borderRadius: 20,
+    fontSize: 11,
+  },
+
+  documentTitle: {
+    color: "#f1edff",
+    fontSize: 17,
+    margin: "10px 0",
+    overflowWrap: "anywhere",
+  },
+
+  documentInfo: {
+    color: "#aaa5c1",
+    fontSize: 12,
+    lineHeight: 1.6,
+    overflowWrap: "anywhere",
+  },
+
+  permissionList: {
+    background: "#0b1120",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 15,
+  },
+
+  permissionHeading: {
+    color: "#c4b5fd",
+    fontSize: 12,
+  },
+
+  permissionRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 8,
+    alignItems: "center",
+    paddingTop: 10,
+    color: "#c2bfd2",
+    fontSize: 12,
+  },
+
+  permissionBadge: {
+    background: "#123b32",
+    color: "#6ee7b7",
+    padding: "4px 8px",
+    borderRadius: 6,
+    fontSize: 10,
+  },
+
+  accessControls: {
+    marginTop: 16,
+    borderTop: "1px solid #34304e",
+    paddingTop: 12,
+  },
+
+  accessButton: {
+    width: "100%",
+    padding: 11,
+    background: "linear-gradient(110deg, #7044c5, #9859db)",
+    color: "white",
+    border: 0,
+    borderRadius: 7,
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
+
   actionBadge: {
     display: "inline-block",
     background: "#30264d",
@@ -910,6 +1444,12 @@ const styles = {
     fontSize: 11,
     fontWeight: "bold",
     whiteSpace: "nowrap",
+  },
+
+  timeNote: {
+    color: "#827d99",
+    fontSize: 11,
+    marginTop: 16,
   },
 
   muted: {
